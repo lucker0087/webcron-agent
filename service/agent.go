@@ -44,6 +44,11 @@ type Data struct {
 	Time string          `json:"time"`
 }
 
+type Response struct {
+	Code int    `json:"code"`
+	Msg  string `json:"msg"`
+}
+
 func NewAgentService() Service {
 
 	return &AgentService{
@@ -180,10 +185,19 @@ func (agent *AgentService) Dispatch(conn net.Conn, d *Data) error {
 		err = jobs.StopTasks(d.Data)
 	}
 
+	var response Response
+
 	if err != nil {
-		agent.SendData(conn, []byte(err.Error()))
+		response.Code = 1
+		response.Msg = err.Error()
+		rsp, _ := json.Marshal(response)
+		agent.SendData(conn, rsp)
 		return err
 	}
-	agent.SendData(conn, []byte("OK"))
+
+	response.Code = 0
+	response.Msg = "OK"
+	rsp, _ := json.Marshal(response)
+	agent.SendData(conn, rsp)
 	return nil
 }
