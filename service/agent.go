@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"log"
 	"net"
@@ -108,6 +109,8 @@ func (agent *AgentService) Handler(conn net.Conn) error {
 		case io.EOF:
 			return nil
 		case nil:
+
+			fmt.Println("收到消息体: " + string(data))
 
 			//time.Sleep(time.Second * 3)
 			d, err := decodeData(data)
