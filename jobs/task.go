@@ -176,7 +176,7 @@ func (j *Job) Run() {
 		}()
 	}
 
-	fmt.Printf("开始执行任务: %s", j.name)
+	fmt.Printf("开始执行任务: %s\n", j.name)
 
 	j.status++
 	defer func() {
