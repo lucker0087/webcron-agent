@@ -3,14 +3,18 @@ package jobs
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"log"
 	"os"
 	"os/exec"
 	"runtime/debug"
+	"sync"
 	"time"
 )
+
+var l sync.RWMutex
 
 const (
 	TASK_SUCCESS = 0  // 任务执行成功
@@ -49,6 +53,7 @@ type Job struct {
 
 func RunTask(data []byte, remeber bool) error {
 	task_list, err := DecodeTask(data)
+
 	if err != nil {
 		return err
 	}
@@ -79,12 +84,24 @@ func StopTasks(data []byte) error {
 		return nil
 	}
 
+	task_list, _ := GetLocalCron()
+
 	for _, id := range ids {
-		RemoveJob(id)
-		fmt.Printf("停止任务:%d\n", id)
+		if len(task_list) > 0 {
+			for _, task := range task_list {
+				if task.Id == id {
+					RemoveJob(id)
+					delete(task_list, id)
+					fmt.Printf("停止任务:%d\n", id)
+				} else {
+					fmt.Printf("任务不存在%d\n", id)
+				}
+			}
+		}
 	}
 
-	return nil
+	d, _ := EncodeTask(task_list)
+	return RememberCron(d)
 }
 
 func NewJob(task *Task) (*Job, error) {
@@ -110,13 +127,34 @@ func NewJob(task *Task) (*Job, error) {
 	return job, nil
 }
 
-func DecodeTask(d []byte) ([]*Task, error) {
+func DecodeTask(d []byte) (map[int]*Task, error) {
 	var task_list []*Task
+
+	new_task_list := map[int]*Task{}
+
 	err := json.Unmarshal(d, &task_list)
 	if err != nil {
 		return nil, err
 	}
-	return task_list, nil
+
+	if len(task_list) > 0 {
+		for _, task := range task_list {
+			new_task_list[task.Id] = task
+		}
+	}
+	return new_task_list, nil
+}
+
+func EncodeTask(task_list map[int]*Task) ([]byte, error) {
+	var list []*Task
+	if len(task_list) == 0 {
+		return nil, errors.New("Task list empty")
+	}
+
+	for _, task := range task_list {
+		list = append(list, task)
+	}
+	return json.Marshal(list)
 }
 
 func (j *Job) Run() {
@@ -162,17 +200,31 @@ func (j *Job) Run() {
 }
 
 func RememberCron(data []byte) error {
+	l.Lock()
+	defer l.Unlock()
 	path, _ := os.Getwd()
+	//return ioutil.WriteFile(filepath.Dir(path)+"/data/cron.data", data, 0644)
 	return ioutil.WriteFile(path+"/data/cron.data", data, 0644)
 }
 
-func GetLocalCron() ([]byte, error) {
+func GetLocalCron() (map[int]*Task, error) {
+	l.RLock()
+	defer l.RUnlock()
 	path, _ := os.Getwd()
-	return ioutil.ReadFile(path + "/data/cron.data")
+	//data, err := ioutil.ReadFile(filepath.Dir(path) + "/data/cron.data")
+	data, err := ioutil.ReadFile(path + "/data/cron.data")
+	if err != nil {
+		return nil, err
+	}
+	return DecodeTask(data)
 }
 
 func RunLocalTask() error {
-	data, err := GetLocalCron()
+	task_list, err := GetLocalCron()
+	if err != nil {
+		return err
+	}
+	data, err := EncodeTask(task_list)
 	if err != nil {
 		return err
 	}
