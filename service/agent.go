@@ -182,7 +182,7 @@ func (agent *AgentService) Dispatch(conn net.Conn, d *Data) error {
 	var err error
 
 	switch d.Type {
-	case TASK_ADD:
+	case TASK_START:
 		err = jobs.RunTask(d.Data, true)
 	case TASK_STOP:
 		err = jobs.StopTasks(d.Data)

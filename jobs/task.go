@@ -9,7 +9,6 @@ import (
 	"log"
 	"os"
 	"os/exec"
-	"runtime/debug"
 	"sync"
 	"time"
 )
@@ -41,16 +40,6 @@ type Task struct {
 	CreateTime   int64  `json:"create_time"`
 }
 
-type Job struct {
-	id         int                                               // 任务ID
-	logId      int64                                             // 日志记录ID
-	name       string                                            // 任务名称
-	task       *Task                                             // 任务对象
-	runFunc    func(time.Duration) (string, string, error, bool) // 执行函数
-	status     int                                               // 任务状态，大于0表示正在执行中
-	Concurrent bool                                              // 同一个任务是否允许并行执行
-}
-
 func RunTask(data []byte, remeber bool) error {
 	task_list, err := DecodeTask(data)
 
@@ -59,7 +48,7 @@ func RunTask(data []byte, remeber bool) error {
 	}
 
 	if remeber {
-		go RememberCron(data)
+		go RememberCron(task_list)
 	}
 
 	for _, task := range task_list {
@@ -100,8 +89,7 @@ func StopTasks(data []byte) error {
 		}
 	}
 
-	d, _ := EncodeTask(task_list)
-	return RememberCron(d)
+	return RememberCron(task_list)
 }
 
 func NewJob(task *Task) (*Job, error) {
@@ -157,52 +145,21 @@ func EncodeTask(task_list map[int]*Task) ([]byte, error) {
 	return json.Marshal(list)
 }
 
-func (j *Job) Run() {
-	if !j.Concurrent && j.status > 0 {
-		fmt.Printf("任务[%d]上一次执行尚未结束，本次被忽略。", j.id)
-		return
-	}
+func RememberCron(task_list map[int]*Task) error {
+	path, _ := os.Getwd()
+	local_task_list, _ := GetLocalCron()
 
-	defer func() {
-		if err := recover(); err != nil {
-			fmt.Printf(string(debug.Stack()))
-		}
-	}()
-
-	if workPool != nil {
-		workPool <- true
-		defer func() {
-			<-workPool
-		}()
-	}
-
-	fmt.Printf("开始执行任务: %s\n", j.name)
-
-	j.status++
-	defer func() {
-		j.status--
-	}()
-
-	t := time.Now()
-	timeout := time.Duration(time.Hour * 24)
-	if j.task.Timeout > 0 {
-		timeout = time.Second * time.Duration(j.task.Timeout)
-	}
-
-	cmdOut, cmdErr, err, isTimeout := j.runFunc(timeout)
-	consume := time.Now().Sub(t) / time.Millisecond
-
-	if !isTimeout {
-		fmt.Printf("任务:%s, 正常输出:%s, 异常输出:%s, 错误:%s, 执行时间:%d", j.name, cmdOut, cmdErr, err, int(consume))
-	} else {
-		fmt.Printf("任务:%s, 执行超过了%d秒, 异常输出:%s", j.name, timeout/time.Second, cmdErr)
-	}
-}
-
-func RememberCron(data []byte) error {
 	l.Lock()
 	defer l.Unlock()
-	path, _ := os.Getwd()
+
+	if len(local_task_list) > 0 {
+		for id, task := range local_task_list {
+			task_list[id] = task
+		}
+	}
+
+	data, _ := EncodeTask(task_list)
+
 	//return ioutil.WriteFile(filepath.Dir(path)+"/data/cron.data", data, 0644)
 	return ioutil.WriteFile(path+"/data/cron.data", data, 0644)
 }

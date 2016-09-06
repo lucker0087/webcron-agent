@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"testing"
-	"time"
 	"webcron-agent/jobs"
 )
 
@@ -27,5 +26,11 @@ func TestStopTask(t *testing.T) {
 
 func TestLocalTask(t *testing.T) {
 	jobs.RunLocalTask()
-	time.Sleep(time.Second * 10)
+	//time.Sleep(time.Second * 10)
+}
+
+func TestRemeberCron(t *testing.T) {
+	data := "[{\"id\":1,\"user_id\":1,\"server_id\":1,\"task_name\":\"测试脚本\",\"task_type\":1,\"description\":\"这是我的测试脚本描述\",\"cron_spec\":\"* * * * * *\",\"concurrent\":0,\"command\":\"ls /tmp\",\"status\":1,\"notify\":1,\"notify_email\":\"zhanghuitao@lianjia.com\",\"timeout\":3,\"execute_times\":3,\"prev_time\":1472720249,\"create_time\":1472720309}]"
+	task_list, _ := jobs.DecodeTask([]byte(data))
+	jobs.RememberCron(task_list)
 }

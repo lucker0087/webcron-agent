@@ -8,20 +8,6 @@ import (
 	"github.com/astaxie/beego"
 )
 
-func InitJobs() {
-	/*
-		list, _ := models.TaskGetList(1, 1000000, "status", 1)
-		for _, task := range list {
-			job, err := NewJobFromTask(task)
-			if err != nil {
-				beego.Error("InitJobs:", err.Error())
-				continue
-			}
-			AddJob(task.CronSpec, job)
-		}
-	*/
-}
-
 func runCmdWithTimeout(cmd *exec.Cmd, timeout time.Duration) (error, bool) {
 	done := make(chan error)
 	go func() {
