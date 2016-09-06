@@ -18,17 +18,12 @@ func AgentCommands() []cli.Command {
 				{
 					Name:   "list",
 					Usage:  "List cron commands",
-					Action: listCommands,
+					Action: listCron,
 				},
 				{
-					Name:   "run",
-					Usage:  "run a command",
-					Action: runCommand,
-				},
-				{
-					Name:   "edit",
-					Usage:  "edit command",
-					Action: editCommand,
+					Name:   "stop",
+					Usage:  "stop the agent server",
+					Action: stopCron,
 				},
 			},
 		},

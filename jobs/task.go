@@ -48,7 +48,7 @@ func RunTask(data []byte, remeber bool) error {
 	}
 
 	if remeber {
-		go RememberCron(task_list)
+		go RememberCron(task_list, true)
 	}
 
 	for _, task := range task_list {
@@ -74,7 +74,6 @@ func StopTasks(data []byte) error {
 	}
 
 	task_list, _ := GetLocalCron()
-
 	for _, id := range ids {
 		if len(task_list) > 0 {
 			for _, task := range task_list {
@@ -89,7 +88,7 @@ func StopTasks(data []byte) error {
 		}
 	}
 
-	return RememberCron(task_list)
+	return RememberCron(task_list, false)
 }
 
 func NewJob(task *Task) (*Job, error) {
@@ -145,9 +144,13 @@ func EncodeTask(task_list map[int]*Task) ([]byte, error) {
 	return json.Marshal(list)
 }
 
-func RememberCron(task_list map[int]*Task) error {
-	path, _ := os.Getwd()
-	local_task_list, _ := GetLocalCron()
+func RememberCron(task_list map[int]*Task, append bool) error {
+
+	var local_task_list = make(map[int]*Task, 0)
+
+	if append {
+		local_task_list, _ = GetLocalCron()
+	}
 
 	l.Lock()
 	defer l.Unlock()
@@ -160,20 +163,28 @@ func RememberCron(task_list map[int]*Task) error {
 
 	data, _ := EncodeTask(task_list)
 
-	//return ioutil.WriteFile(filepath.Dir(path)+"/data/cron.data", data, 0644)
-	return ioutil.WriteFile(path+"/data/cron.data", data, 0644)
+	return ioutil.WriteFile(GetCronDataPath(), data, 0644)
 }
 
 func GetLocalCron() (map[int]*Task, error) {
 	l.RLock()
 	defer l.RUnlock()
-	path, _ := os.Getwd()
-	//data, err := ioutil.ReadFile(filepath.Dir(path) + "/data/cron.data")
-	data, err := ioutil.ReadFile(path + "/data/cron.data")
+
+	data, err := ioutil.ReadFile(GetCronDataPath())
 	if err != nil {
 		return nil, err
 	}
-	return DecodeTask(data)
+
+	if len(data) > 0 {
+		return DecodeTask(data)
+	}
+
+	return nil, nil
+}
+
+func GetCronDataPath() string {
+	path, _ := os.Getwd()
+	return path + "/data/cron.data"
 }
 
 func RunLocalTask() error {
@@ -182,7 +193,7 @@ func RunLocalTask() error {
 		return err
 	}
 	data, err := EncodeTask(task_list)
-	if err != nil {
+	if err != nil || len(data) == 0 {
 		return err
 	}
 	return RunTask(data, false)
