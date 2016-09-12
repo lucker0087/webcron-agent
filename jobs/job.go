@@ -1,9 +1,12 @@
 package jobs
 
 import (
+	"encoding/json"
 	"fmt"
 	"runtime/debug"
 	"time"
+	"webcron-agent/config"
+	"webcron-agent/libs"
 )
 
 type Job struct {
@@ -16,9 +19,20 @@ type Job struct {
 	Concurrent bool                                              // 同一个任务是否允许并行执行
 }
 
+type JobResult struct {
+	Id            int    `json:job_id`
+	SuccessOutput string `json:response_success`
+	ErrorOutput   string `json:response_error`
+	Error         string `json:error`
+	Consume       int    `json:consume`
+	Timeout       bool   `json:timeout`
+}
+
 func (j *Job) Run() {
+
+	var logger = libs.NewTaskLogger()
 	if !j.Concurrent && j.status > 0 {
-		fmt.Printf("任务[%d]上一次执行尚未结束，本次被忽略。", j.id)
+		logger.Warning(fmt.Sprintf("任务[%d]上一次执行尚未结束，本次被忽略。", j.id))
 		return
 	}
 
@@ -35,9 +49,9 @@ func (j *Job) Run() {
 		}()
 	}
 
-	fmt.Printf("开始执行任务: %s\n", j.name)
-
 	j.status++
+
+	logger.Info(fmt.Sprintf("开始执行任务: %s, 当前任务数: %d\n", j.name, j.status))
 	defer func() {
 		j.status--
 	}()
@@ -51,14 +65,47 @@ func (j *Job) Run() {
 	cmdOut, cmdErr, err, isTimeout := j.runFunc(timeout)
 	consume := time.Now().Sub(t) / time.Millisecond
 
-	//client, err := NewSocketClient("127.0.0.1", 9999)
-	//if err != nil {
-	//	//todo
-	//}
+	var result JobResult
 
-	if !isTimeout {
-		fmt.Printf("任务:%s, 正常输出:%s, 异常输出:%s, 错误:%s, 执行时间:%d", j.name, cmdOut, cmdErr, err, int(consume))
-	} else {
-		fmt.Printf("任务:%s, 执行超过了%d秒, 异常输出:%s", j.name, timeout/time.Second, cmdErr)
+	result.Id = j.id
+	result.SuccessOutput = cmdOut
+	result.ErrorOutput = cmdErr
+	result.Timeout = isTimeout
+	result.Error = ""
+	result.Consume = int(consume)
+	if err != nil {
+		result.Error = err.Error()
 	}
+
+	data, _ := encodeResult(result)
+
+	config, _ := config.GetConfig()
+	client, err := NewSocketClient(config.Master.Server, config.Master.Port)
+	if err != nil {
+		result.Error = "与服务器失去连接, 执行结果未同步"
+		data, _ := encodeResult(result)
+		//log
+		logger.Warning(string(data))
+		return
+	}
+	defer client.Close()
+
+	err = client.Send(data)
+	if err != nil {
+		result.Error = err.Error()
+		data, _ := encodeResult(result)
+		//log
+		fmt.Println(string(data))
+		return
+	}
+	fmt.Println(string(data))
+	return
+}
+
+func encodeResult(result JobResult) ([]byte, error) {
+	var data Data
+	data.Type = "job_response"
+	data.Data = result
+	data.Time = time.Now().String()
+	return json.Marshal(data)
 }

@@ -1,0 +1,15 @@
+title = "Webcron agent config"
+
+[app]
+path = ""
+
+[owner]
+name = "lianjia"
+organization = "lianjia.com"
+
+[master]
+server = "127.0.0.1"
+port = 9999
+
+[cron]
+datapath= "data/cron.data"

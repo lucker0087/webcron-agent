@@ -33,7 +33,7 @@ func listCron(c *cli.Context) error {
 	return nil
 }
 
-func StopCron(c *cli.Context) error {
+func stopCron(c *cli.Context) error {
 	//args := c.Args()
 	//fmt.Println(args[0])
 	return nil

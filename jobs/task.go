@@ -6,11 +6,12 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
-	"log"
-	"os"
 	"os/exec"
+	"path/filepath"
 	"sync"
 	"time"
+	"webcron-agent/config"
+	"webcron-agent/libs"
 )
 
 var l sync.RWMutex
@@ -51,10 +52,12 @@ func RunTask(data []byte, remeber bool) error {
 		go RememberCron(task_list, true)
 	}
 
+	logger := libs.NewTaskLogger()
+
 	for _, task := range task_list {
 		job, err := NewJob(task)
 		if err != nil {
-			log.Printf("InitJobs error :%s", err.Error())
+			logger.Warning(fmt.Sprintf("InitJobs error :%s", err.Error()))
 			continue
 		}
 		AddJob(task.CronSpec, job)
@@ -73,6 +76,7 @@ func StopTasks(data []byte) error {
 		return nil
 	}
 
+	logger := libs.NewTaskLogger()
 	task_list, _ := GetLocalCron()
 	for _, id := range ids {
 		if len(task_list) > 0 {
@@ -80,9 +84,9 @@ func StopTasks(data []byte) error {
 				if task.Id == id {
 					RemoveJob(id)
 					delete(task_list, id)
-					fmt.Printf("停止任务:%d\n", id)
+					logger.Info(fmt.Sprintf("停止任务:%d\n", id))
 				} else {
-					fmt.Printf("任务不存在%d\n", id)
+					logger.Warning(fmt.Sprintf("任务不存在%d\n", id))
 				}
 			}
 		}
@@ -96,8 +100,9 @@ func NewJob(task *Task) (*Job, error) {
 		return nil, fmt.Errorf("ToJob: 缺少id")
 	}
 	job := &Job{
-		id:   task.Id,
-		name: task.TaskName,
+		id:         task.Id,
+		name:       task.TaskName,
+		Concurrent: task.Concurrent == 1,
 	}
 	job.task = task
 	job.runFunc = func(timeout time.Duration) (string, string, error, bool) {
@@ -183,8 +188,8 @@ func GetLocalCron() (map[int]*Task, error) {
 }
 
 func GetCronDataPath() string {
-	path, _ := os.Getwd()
-	return path + "/data/cron.data"
+	config, _ := config.GetConfig()
+	return filepath.Join(config.App.Path, config.Cron.DataPath)
 }
 
 func RunLocalTask() error {

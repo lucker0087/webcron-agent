@@ -189,7 +189,6 @@ func (agent *AgentService) Dispatch(conn net.Conn, d *Data) error {
 	}
 
 	var response Response
-
 	if err != nil {
 		response.Code = 1
 		response.Msg = err.Error()

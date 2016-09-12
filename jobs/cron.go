@@ -2,7 +2,7 @@ package jobs
 
 import (
 	"sync"
-	"webcron/app/libs/cron"
+	"webcron-agent/jobs/cron"
 )
 
 const MAXRUNNINGJOBS = 100
