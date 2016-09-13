@@ -53,7 +53,6 @@ type Response struct {
 }
 
 func NewAgentService() Service {
-
 	return &AgentService{
 		exit:      make(chan bool),
 		waitGroup: &sync.WaitGroup{},
@@ -194,7 +193,7 @@ func (agent *AgentService) Dispatch(conn net.Conn, d *Data) error {
 		if run_err != nil {
 			err = run_err
 		}
-		response.Data, _ = json.Marshal(result)
+		response.Data = result
 	}
 
 	if err != nil {
