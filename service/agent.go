@@ -112,7 +112,7 @@ func (agent *AgentService) Handler(conn net.Conn) error {
 
 			fmt.Println("收到消息体: " + string(data))
 
-			//time.Sleep(time.Second * 3)
+			//time.Sleep(time.Second * 30)
 			d, err := decodeData(data)
 			if err != nil {
 				return err
@@ -142,7 +142,7 @@ func (agent *AgentService) SignalHandler() {
 		switch sig {
 
 		case syscall.SIGINT, syscall.SIGTERM:
-			log.Printf("Agent Service catch signal: %s, try to stop service", sig)
+			log.Printf("Agent Service catch signal: %s, waiting all runing task done,try to stop service", sig)
 			agent.Stop()
 
 		default:

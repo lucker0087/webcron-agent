@@ -4,6 +4,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"sync"
 	"time"
 	"webcron-agent/config"
 
@@ -13,6 +14,8 @@ import (
 type Logger struct {
 	log *logging.Logger
 }
+
+var lock sync.RWMutex
 
 func NewTaskLogger() *Logger {
 	now := time.Now()
@@ -27,6 +30,8 @@ func NewSocketLogger() *Logger {
 }
 
 func CreateLogFile(file string) (io.Writer, error) {
+	lock.Lock()
+	defer lock.Unlock()
 	config, _ := config.GetConfig()
 
 	logpath := filepath.Join(config.App.Path, file)

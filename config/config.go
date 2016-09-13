@@ -3,9 +3,12 @@ package config
 import (
 	"os"
 	"path/filepath"
+	"sync"
 
 	"github.com/BurntSushi/toml"
 )
+
+var lock sync.RWMutex
 
 type Config struct {
 	Title  string
@@ -34,6 +37,8 @@ type cronInfo struct {
 }
 
 func GetConfig() (*Config, error) {
+	lock.RLock()
+	defer lock.RUnlock()
 	var config *Config
 
 	path, _ := os.Getwd()
