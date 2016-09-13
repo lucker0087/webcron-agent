@@ -47,8 +47,9 @@ type Data struct {
 }
 
 type Response struct {
-	Code int    `json:"code"`
-	Msg  string `json:"msg"`
+	Code int         `json:"code"`
+	Msg  string      `json:"msg"`
+	Data interface{} `json:"data"`
 }
 
 func NewAgentService() Service {
@@ -181,6 +182,7 @@ func (agent *AgentService) Dispatch(conn net.Conn, d *Data) error {
 	}
 
 	var err error
+	var response Response
 
 	switch d.Type {
 	case TASK_START:
@@ -188,10 +190,13 @@ func (agent *AgentService) Dispatch(conn net.Conn, d *Data) error {
 	case TASK_STOP:
 		err = jobs.StopTasks(d.Data)
 	case TASK_RUN:
-		err = jobs.RunTask(d.Data)
+		result, run_err := jobs.RunTask(d.Data)
+		if run_err != nil {
+			err = run_err
+		}
+		response.Data, _ = json.Marshal(result)
 	}
 
-	var response Response
 	if err != nil {
 		response.Code = 1
 		response.Msg = err.Error()

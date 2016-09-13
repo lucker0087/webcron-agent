@@ -65,18 +65,19 @@ func CronTask(data []byte, remeber bool) error {
 	return nil
 }
 
-func RunTask(data []byte) error {
+func RunTask(data []byte) (*JobResult, error) {
 	var task *Task
 	json.Unmarshal(data, &task)
 
 	logger := libs.NewTaskLogger()
 	job, err := NewJob(task)
+	job.SendLog = false
 	if err != nil {
 		logger.Warning(fmt.Sprintf("InitJobs error :%s", err.Error()))
-		return err
+		return nil, err
 	}
 	job.Run()
-	return nil
+	return &job.Result, nil
 }
 
 func StopTasks(data []byte) error {
@@ -116,6 +117,7 @@ func NewJob(task *Task) (*Job, error) {
 	job := &Job{
 		id:         task.Id,
 		name:       task.TaskName,
+		SendLog:    true,
 		Concurrent: task.Concurrent == 1,
 	}
 	job.task = task
