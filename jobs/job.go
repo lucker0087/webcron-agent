@@ -29,7 +29,6 @@ type JobResult struct {
 }
 
 func (j *Job) Run() {
-
 	var logger = libs.NewTaskLogger()
 	if !j.Concurrent && j.status > 0 {
 		logger.Warning(fmt.Sprintf("任务[%d]上一次执行尚未结束，本次被忽略。", j.id))

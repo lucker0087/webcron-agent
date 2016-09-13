@@ -66,21 +66,16 @@ func CronTask(data []byte, remeber bool) error {
 }
 
 func RunTask(data []byte) error {
-	task_list, err := DecodeTask(data)
-
-	if err != nil {
-		return err
-	}
+	var task *Task
+	json.Unmarshal(data, &task)
 
 	logger := libs.NewTaskLogger()
-	for _, task := range task_list {
-		job, err := NewJob(task)
-		if err != nil {
-			logger.Warning(fmt.Sprintf("InitJobs error :%s", err.Error()))
-			continue
-		}
-		job.Run()
+	job, err := NewJob(task)
+	if err != nil {
+		logger.Warning(fmt.Sprintf("InitJobs error :%s", err.Error()))
+		return err
 	}
+	job.Run()
 	return nil
 }
 
