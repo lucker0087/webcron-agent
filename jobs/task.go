@@ -41,7 +41,7 @@ type Task struct {
 	CreateTime   int64  `json:"create_time"`
 }
 
-func RunTask(data []byte, remeber bool) error {
+func CronTask(data []byte, remeber bool) error {
 	task_list, err := DecodeTask(data)
 
 	if err != nil {
@@ -61,6 +61,25 @@ func RunTask(data []byte, remeber bool) error {
 			continue
 		}
 		AddJob(task.CronSpec, job)
+	}
+	return nil
+}
+
+func RunTask(data []byte) error {
+	task_list, err := DecodeTask(data)
+
+	if err != nil {
+		return err
+	}
+
+	logger := libs.NewTaskLogger()
+	for _, task := range task_list {
+		job, err := NewJob(task)
+		if err != nil {
+			logger.Warning(fmt.Sprintf("InitJobs error :%s", err.Error()))
+			continue
+		}
+		job.Run()
 	}
 	return nil
 }
@@ -201,5 +220,5 @@ func RunLocalTask() error {
 	if err != nil || len(data) == 0 {
 		return err
 	}
-	return RunTask(data, false)
+	return CronTask(data, false)
 }

@@ -25,6 +25,7 @@ const (
 	TASK_ADD    = "task_add"
 	TASK_STOP   = "task_stop"
 	TASK_START  = "task_start"
+	TASK_RUN    = "task_run"
 	TASK_DELETE = "task_delete"
 )
 
@@ -183,9 +184,11 @@ func (agent *AgentService) Dispatch(conn net.Conn, d *Data) error {
 
 	switch d.Type {
 	case TASK_START:
-		err = jobs.RunTask(d.Data, true)
+		err = jobs.CronTask(d.Data, true)
 	case TASK_STOP:
 		err = jobs.StopTasks(d.Data)
+	case TASK_RUN:
+		err = jobs.RunTask(d.Data)
 	}
 
 	var response Response
