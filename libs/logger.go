@@ -29,6 +29,11 @@ func NewSocketLogger() *Logger {
 	return NewLogger(f)
 }
 
+func NewAppLogger() *Logger {
+	f, _ := CreateLogFile("logs/app.log")
+	return NewLogger(f)
+}
+
 func CreateLogFile(file string) (io.Writer, error) {
 	lock.Lock()
 	defer lock.Unlock()

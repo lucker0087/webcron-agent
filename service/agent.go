@@ -4,7 +4,6 @@ import (
 	"bufio"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"io"
 	"log"
 	"net"
@@ -14,6 +13,7 @@ import (
 	"sync"
 	"syscall"
 	"webcron-agent/jobs"
+	"webcron-agent/libs"
 )
 
 const (
@@ -100,6 +100,7 @@ func (agent *AgentService) Stop() {
 }
 
 func (agent *AgentService) Handler(conn net.Conn) error {
+	var socketLogger = libs.NewSocketLogger()
 	defer conn.Close()
 	defer agent.waitGroup.Done()
 
@@ -110,9 +111,7 @@ func (agent *AgentService) Handler(conn net.Conn) error {
 		case io.EOF:
 			return nil
 		case nil:
-
-			fmt.Println("收到消息体: " + string(data))
-
+			socketLogger.Info("收到消息体: " + string(data))
 			//time.Sleep(time.Second * 30)
 			d, err := decodeData(data)
 			if err != nil {
@@ -163,7 +162,8 @@ func (agent *AgentService) SendData(conn net.Conn, str []byte) {
 	w := bufio.NewWriter(conn)
 	w.Write(str)
 	w.Flush()
-	log.Printf("Send: %s", str)
+	var log = libs.NewSocketLogger()
+	log.Info("发送消息体: " + string(str))
 }
 
 func decodeData(d []byte) (*Data, error) {

@@ -30,15 +30,16 @@ type JobResult struct {
 }
 
 func (j *Job) Run() {
-	var logger = libs.NewTaskLogger()
+	var taskLogger = libs.NewTaskLogger()
+
 	if !j.Concurrent && j.status > 0 {
-		logger.Warning(fmt.Sprintf("任务[%d]上一次执行尚未结束，本次被忽略。", j.id))
+		taskLogger.Warning(fmt.Sprintf("任务[%d]上一次执行尚未结束，本次被忽略。", j.id))
 		return
 	}
 
 	defer func() {
 		if err := recover(); err != nil {
-			fmt.Printf(string(debug.Stack()))
+			taskLogger.Error(fmt.Printf(string(debug.Stack())))
 		}
 	}()
 
@@ -51,7 +52,7 @@ func (j *Job) Run() {
 
 	j.status++
 
-	logger.Info(fmt.Sprintf("开始执行任务: %s, 当前任务数: %d\n", j.name, j.status))
+	taskLogger.Info(fmt.Sprintf("开始执行任务: %s, 当前任务数: %d\n", j.name, j.status))
 	defer func() {
 		j.status--
 	}()
@@ -83,15 +84,17 @@ func (j *Job) Run() {
 	}
 
 	data, _ := encodeResult(result)
+	taskLogger.Info(string(data))
+
 	config, _ := config.GetConfig()
 	client, err := NewSocketClient(config.Master.Server, config.Master.Port)
 	if err != nil {
 		result.Error = "与服务器失去连接, 执行结果未同步"
 		data, _ := encodeResult(result)
-		//log
-		logger.Warning(string(data))
+		taskLogger.Warning(string(data))
 		return
 	}
+
 	defer client.Close()
 
 	err = client.Send(data)
@@ -99,10 +102,9 @@ func (j *Job) Run() {
 		result.Error = err.Error()
 		data, _ := encodeResult(result)
 		//log
-		fmt.Println(string(data))
+		taskLogger.Error(string(data))
 		return
 	}
-	fmt.Println(string(data))
 	return
 }
 
