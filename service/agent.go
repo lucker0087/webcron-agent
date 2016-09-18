@@ -155,13 +155,18 @@ func (agent *AgentService) ReadData(conn net.Conn) ([]byte, error) {
 	buf := make([]byte, 1024)
 	r := bufio.NewReader(conn)
 	n, err := r.Read(buf)
-	return buf[:n], err
+
+	data, _ := libs.AesDencrypt(buf[:n])
+	return data, err
 }
 
 func (agent *AgentService) SendData(conn net.Conn, str []byte) {
 	w := bufio.NewWriter(conn)
-	w.Write(str)
+	send, _ := libs.AesEncrypt(str)
+
+	w.Write(send)
 	w.Flush()
+
 	var log = libs.NewSocketLogger()
 	log.Info("发送消息体: " + string(str))
 }

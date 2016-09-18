@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"net"
 	"strconv"
+	"webcron/app/libs"
 )
 
 type Socket interface {
@@ -38,7 +39,8 @@ func NewSocketClient(address string, port int) (Socket, error) {
 }
 
 func (sc *SocketClient) Send(data []byte) error {
-	_, e := sc.Conn.Write(data)
+	send, _ := libs.AesEncrypt(data)
+	_, e := sc.Conn.Write(send)
 	return e
 }
 
@@ -47,7 +49,8 @@ func (sc *SocketClient) Read() ([]byte, error) {
 	r := bufio.NewReader(sc.Conn)
 
 	n, err := r.Read(buf)
-	return buf[:n], err
+	data, _ := libs.AesDencrypt(buf[:n])
+	return data, err
 }
 
 func (sc *SocketClient) Close() error {
