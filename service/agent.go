@@ -4,8 +4,8 @@ import (
 	"bufio"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
-	"log"
 	"net"
 	"os"
 	"os/signal"
@@ -60,19 +60,20 @@ func NewAgentService() Service {
 }
 
 func (agent *AgentService) Start() error {
+	var appLogger = libs.NewAppLogger()
 	listen, err := net.Listen("tcp4", Address+":"+strconv.Itoa(Port))
 	if err != nil {
 		return err
 	}
 	defer listen.Close()
 
-	log.Printf("Agent service start listening on %s:%d", Address, Port)
+	appLogger.Info(fmt.Sprintf("Agent service start listening on %s:%d", Address, Port))
 
 	go func() {
 		exit := <-agent.exit
 		if exit {
 			close(agent.exit)
-			log.Printf("Agent service stoped")
+			appLogger.Info("Agent service stoped")
 			listen.Close()
 		}
 	}()
@@ -84,7 +85,8 @@ func (agent *AgentService) Start() error {
 	for {
 		conn, err := listen.Accept()
 		if err != nil {
-			log.Fatalln("Lost connection error:", err.Error())
+			appLogger.Error(fmt.Sprintf("Lost connection error: %s", err.Error()))
+			os.Exit(1)
 		}
 
 		agent.waitGroup.Add(1)
@@ -111,7 +113,7 @@ func (agent *AgentService) Handler(conn net.Conn) error {
 		case io.EOF:
 			return nil
 		case nil:
-			socketLogger.Info("收到消息体: " + string(data))
+			socketLogger.Info(fmt.Sprintf("收到消息体: %s", string(data)))
 			//time.Sleep(time.Second * 30)
 			d, err := decodeData(data)
 			if err != nil {
@@ -135,6 +137,7 @@ func (agent *AgentService) Handler(conn net.Conn) error {
 }
 
 func (agent *AgentService) SignalHandler() {
+	var appLogger = libs.NewAppLogger()
 	sigs := make(chan os.Signal, 1)
 	signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM)
 	go func() {
@@ -142,11 +145,11 @@ func (agent *AgentService) SignalHandler() {
 		switch sig {
 
 		case syscall.SIGINT, syscall.SIGTERM:
-			log.Printf("Agent Service catch signal: %s, waiting all runing task done,try to stop service", sig)
+			appLogger.Info(fmt.Sprintf("Agent Service catch signal: %s, waiting all runing task done,try to stop service", sig))
 			agent.Stop()
 
 		default:
-			log.Printf("Unknow signal")
+			appLogger.Info(fmt.Sprintf("Unknow signal"))
 		}
 	}()
 }
@@ -168,7 +171,7 @@ func (agent *AgentService) SendData(conn net.Conn, str []byte) {
 	w.Flush()
 
 	var log = libs.NewSocketLogger()
-	log.Info("发送消息体: " + string(str))
+	log.Info(fmt.Sprintf("发送消息体: %s", string(str)))
 }
 
 func decodeData(d []byte) (*Data, error) {
