@@ -16,6 +16,7 @@ type Config struct {
 	Owner  ownerInfo
 	Master masetInfo
 	Cron   cronInfo
+	Aes    aesInfo
 }
 
 type appInfo struct {
@@ -34,6 +35,10 @@ type masetInfo struct {
 
 type cronInfo struct {
 	DataPath string
+}
+
+type aesInfo struct {
+	Key string
 }
 
 func GetConfig() (*Config, error) {

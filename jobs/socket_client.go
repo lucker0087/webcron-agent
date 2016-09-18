@@ -40,6 +40,7 @@ func NewSocketClient(address string, port int) (Socket, error) {
 
 func (sc *SocketClient) Send(data []byte) error {
 	send, _ := libs.AesEncrypt(data)
+
 	_, e := sc.Conn.Write(send)
 	return e
 }

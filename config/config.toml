@@ -13,3 +13,6 @@ port = 9999
 
 [cron]
 datapath= "data/cron.data"
+
+[aes]
+key = "lianjia12798akljzmzmh.ahkjkljl@k"
