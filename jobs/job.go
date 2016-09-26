@@ -14,7 +14,7 @@ type Job struct {
 	name       string                                            // 任务名称
 	task       *Task                                             // 任务对象
 	runFunc    func(time.Duration) (string, string, error, bool) // 执行函数
-	status     int                                               // 任务状态，大于0表示正在执行中
+	runStatus  int                                               // 任务状态，大于0表示正在执行中
 	Concurrent bool                                              // 同一个任务是否允许并行执行
 	SendLog    bool                                              // 同一个任务是否允许并行执行
 	Result     JobResult
@@ -32,8 +32,8 @@ type JobResult struct {
 func (j *Job) Run() {
 	var taskLogger = libs.NewTaskLogger()
 
-	if !j.Concurrent && j.status > 0 {
-		taskLogger.Warning(fmt.Sprintf("任务[%d]上一次执行尚未结束，本次被忽略。", j.id))
+	if !j.Concurrent && j.runStatus > 0 {
+		taskLogger.Warning(fmt.Sprintf("任务[%d] [%s] 上一次执行尚未结束，本次被忽略。", j.id, j.name))
 		return
 	}
 
@@ -50,11 +50,11 @@ func (j *Job) Run() {
 		}()
 	}
 
-	j.status++
+	j.runStatus++
 
-	taskLogger.Info(fmt.Sprintf("开始执行任务: %s, 当前任务数: %d\n", j.name, j.status))
+	taskLogger.Info(fmt.Sprintf("开始执行任务: %s, 当前任务数: %d\n", j.name, j.runStatus))
 	defer func() {
-		j.status--
+		j.runStatus--
 	}()
 
 	t := time.Now()
