@@ -53,12 +53,14 @@ func GetConfig() (*Config, error) {
 		},
 
 		Master: masterInfo{
+			//Server: "10.23.247.119",
+			//Port:   8368,
 			Server: "127.0.0.1",
 			Port:   9999,
 		},
 
 		Cron: cronInfo{
-			DataPath: "data/cron.data",
+			DataPath: "cron.data",
 		},
 
 		Aes: aesInfo{
