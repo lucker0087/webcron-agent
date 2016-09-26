@@ -74,7 +74,7 @@ func (agent *AgentService) Start() error {
 		exit := <-agent.exit
 		if exit {
 			close(agent.exit)
-			appLogger.Info("Agent service stoped")
+			libs.NewAppLogger().Info(fmt.Printf("Agent service stoped"))
 			listen.Close()
 		}
 	}()
@@ -86,7 +86,7 @@ func (agent *AgentService) Start() error {
 	for {
 		conn, err := listen.Accept()
 		if err != nil {
-			appLogger.Error(fmt.Sprintf("Lost connection error: %s", err.Error()))
+			libs.NewAppLogger().Info(fmt.Sprintf("Lost connection error: %s", err.Error()))
 			os.Exit(1)
 		}
 
@@ -138,7 +138,6 @@ func (agent *AgentService) Handler(conn net.Conn) error {
 }
 
 func (agent *AgentService) SignalHandler() {
-	var appLogger = libs.NewAppLogger()
 	sigs := make(chan os.Signal, 1)
 	signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM)
 	go func() {
@@ -146,11 +145,11 @@ func (agent *AgentService) SignalHandler() {
 		switch sig {
 
 		case syscall.SIGINT, syscall.SIGTERM:
-			appLogger.Info(fmt.Sprintf("Agent Service catch signal: %s, waiting all runing task done,try to stop service", sig))
+			libs.NewAppLogger().Info(fmt.Sprintf("Agent Service catch signal: %s, waiting all runing task done,try to stop service", sig))
 			agent.Stop()
 
 		default:
-			appLogger.Info(fmt.Sprintf("Unknow signal"))
+			libs.NewAppLogger().Info(fmt.Sprintf("Unknow signal"))
 		}
 	}()
 }
