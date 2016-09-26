@@ -19,18 +19,18 @@ var lock sync.RWMutex
 
 func NewTaskLogger() *Logger {
 	now := time.Now()
-	f, _ := CreateLogFile("logs/task.log" + now.Format("20060102"))
+	f, _ := CreateLogFile("/var/logs/task_" + now.Format("20060102") + ".log")
 	return NewLogger(f)
 }
 
 func NewSocketLogger() *Logger {
 	now := time.Now()
-	f, _ := CreateLogFile("logs/socket.log" + now.Format("20060102"))
+	f, _ := CreateLogFile("/var/logs/socket_" + now.Format("20060102") + ".log")
 	return NewLogger(f)
 }
 
 func NewAppLogger() *Logger {
-	f, _ := CreateLogFile("logs/app.log")
+	f, _ := CreateLogFile("/var/logs/app.log")
 	return NewLogger(f)
 }
 

@@ -2,10 +2,7 @@ package config
 
 import (
 	"os"
-	"path/filepath"
 	"sync"
-
-	"github.com/BurntSushi/toml"
 )
 
 var lock sync.RWMutex
@@ -14,7 +11,7 @@ type Config struct {
 	Title  string
 	App    appInfo
 	Owner  ownerInfo
-	Master masetInfo
+	Master masterInfo
 	Cron   cronInfo
 	Aes    aesInfo
 }
@@ -28,7 +25,7 @@ type ownerInfo struct {
 	Org  string `toml:"organization"`
 }
 
-type masetInfo struct {
+type masterInfo struct {
 	Server string
 	Port   int
 }
@@ -42,14 +39,42 @@ type aesInfo struct {
 }
 
 func GetConfig() (*Config, error) {
+	path, _ := os.Getwd()
+	return &Config{
+		Title: "Webcron agent config",
+
+		App: appInfo{
+			Path: path,
+		},
+
+		Owner: ownerInfo{
+			Name: "lianjia",
+			Org:  "lianjia.com",
+		},
+
+		Master: masterInfo{
+			Server: "127.0.0.1",
+			Port:   9999,
+		},
+
+		Cron: cronInfo{
+			DataPath: "data/cron.data",
+		},
+
+		Aes: aesInfo{
+			Key: "lianjia12798akljzmzmh.ahkjkljl@k",
+		},
+	}, nil
+
+}
+
+//从配置文件中读取
+/*
+func GetConfig() (*Config, error) {
 	lock.RLock()
 	defer lock.RUnlock()
 	var config *Config
-
 	path, _ := os.Getwd()
-
-	//test
-	//path = filepath.Dir(path)
 
 	if _, err := toml.DecodeFile(filepath.Join(path, "config/config.toml"), &config); err != nil {
 		return nil, err
@@ -59,3 +84,4 @@ func GetConfig() (*Config, error) {
 	}
 	return config, nil
 }
+*/
